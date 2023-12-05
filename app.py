@@ -2,10 +2,27 @@ import os
 import re
 import time
 
+# Environment variables
+source_directory_shows = os.environ.get('SOURCE_DIRECTORY_SHOWS', '/torrents/shows')
+source_directory_movies = os.environ.get('SOURCE_DIRECTORY_MOVIES', '/torrents/movies')
+destination_directory_shows = os.environ.get('DESTINATION_DIRECTORY_SHOWS', '/data/tv')
+destination_directory_movies = os.environ.get('DESTINATION_DIRECTORY_MOVIES', '/data/movies')
+uhd_library = os.environ.get('UHD_LIBRARY', 'True').lower() == 'true'
+
 source_directories = {
-    '/lake/torrents/shows': '/lake/tv',
-    '/lake/torrents/movies': '/lake/movies'
+    source_directory_shows: destination_directory_shows,
+    source_directory_movies: destination_directory_movies
 }
+
+def create_symlinks_for_files_in_folder(source_folder, destination_folder):
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+    for file in os.listdir(source_folder):
+        source_file = os.path.join(source_folder, file)
+        destination_file = os.path.join(destination_folder, file)
+        if not os.path.exists(destination_file):
+            os.symlink(source_file, destination_file)
+            print(f"Symlink created: {source_file} -> {destination_file}")
 
 def format_dir_name(name):
     # Remove known irrelevant patterns and extensions
@@ -61,6 +78,10 @@ def create_symlink_with_retries(source, destination, max_retries=1, retry_interv
 def scan_directories(seen_items):
     while True:
         for source_base, dest_base in source_directories.items():
+            # Skip UHD directory linking if UHD_LIBRARY is False
+            if not uhd_library and '-uhd' in dest_base:
+                continue
+
             current_items = set(os.listdir(source_base))
             new_items = current_items - seen_items[source_base]
             seen_items[source_base] = current_items
@@ -69,17 +90,31 @@ def scan_directories(seen_items):
 
             for item in new_items:
                 item_path = os.path.join(source_base, item)
-                if os.path.isdir(item_path):
-                    dest_dir = dest_base + ('-uhd' if '2160p' in item else '')
+                if os.path.isfile(item_path):
+                    # If item is a file, link it directly
+                    dest_dir = dest_base + ('-uhd' if uhd_library and '2160p' in item else '')
                     formatted_name = format_dir_name(item)
                     matching_dir = match_directory(formatted_name, existing_dirs)
-                    
+
                     if matching_dir:
-                        full_dest_path = os.path.join(dest_dir, matching_dir, os.path.basename(item_path))
-                        print(f"Match found: '{item}' -> '{full_dest_path}'")
-                        create_symlink_with_retries(item_path, full_dest_path)
+                        destination_file = os.path.join(dest_dir, matching_dir, os.path.basename(item_path))
+                        create_symlink_with_retries(item_path, destination_file)
+                        print(f"File symlink created: '{item_path}' -> '{destination_file}'")
                     else:
-                        print(f"No match found for '{item}' in '{dest_dir}'")
+                        print(f"No match found for file '{item}' in '{dest_dir}'")
+
+                elif os.path.isdir(item_path):
+                    # If item is a folder, recreate folder and link files inside it
+                    dest_dir = dest_base + ('-uhd' if uhd_library and '2160p' in item else '')
+                    formatted_name = format_dir_name(item)
+                    matching_dir = match_directory(formatted_name, existing_dirs)
+
+                    if matching_dir:
+                        destination_folder = os.path.join(dest_dir, matching_dir, os.path.basename(item_path))
+                        create_symlinks_for_files_in_folder(item_path, destination_folder)
+                        print(f"Folder processed with file symlinks: '{item_path}' -> '{destination_folder}'")
+                    else:
+                        print(f"No match found for folder '{item}' in '{dest_dir}'")
 
         time.sleep(10)  # Interval for scanning the directories
 
