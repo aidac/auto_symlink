@@ -14,9 +14,10 @@ Be sure to stop container if used in conjuction with rdt-client or similar, as i
 
 #### Usage
 
-Specify source as RD rclone mount (or zurg) and destination as Sonarr/Radarr library dir (dir which Plex/Jellyfin/Emby is monitoring). Then add conent via RD (https://debridmediamanager.com/ or whatever you choose) and get your content show up in *arr. 
+Specify source as RD rclone mount (or zurg) and destination as Sonarr/Radarr library dir (dir which Plex/Jellyfin/Emby is monitoring). Then add content via RD (https://debridmediamanager.com/ or whatever you choose) and get your content show up in *arr. 
 Script will monitor specified dirs in 10s intervals and match the names to **existing** folders in destination dirs. Make sure to add content in *arr first, so it would create appropriate dirs (or do it manually).
 
+**docker-compose.yml**
 ```  
 version: '3.9'
 services:
@@ -38,4 +39,3 @@ services:
       - realdebrid:/torrents # be sure to mount your rclone RD volume
       - /data:/data
     tty: true
-    ```
