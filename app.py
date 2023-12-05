@@ -3,16 +3,19 @@ import re
 import time
 
 # Environment variables
-source_directory_shows = os.environ.get('SOURCE_DIRECTORY_SHOWS', '/torrents/shows')
-source_directory_movies = os.environ.get('SOURCE_DIRECTORY_MOVIES', '/torrents/movies')
-destination_directory_shows = os.environ.get('DESTINATION_DIRECTORY_SHOWS', '/data/tv')
-destination_directory_movies = os.environ.get('DESTINATION_DIRECTORY_MOVIES', '/data/movies')
+source_directory_shows = os.environ.get('SOURCE_DIRECTORY_SHOWS', '/default/source/shows')
+source_directory_movies = os.environ.get('SOURCE_DIRECTORY_MOVIES', '/default/source/movies')
+destination_directory_shows = os.environ.get('DESTINATION_DIRECTORY_SHOWS', '/default/destination/tv')
+destination_directory_movies = os.environ.get('DESTINATION_DIRECTORY_MOVIES', '/default/destination/movies')
+destination_directory_uhd_shows = os.environ.get('DESTINATION_DIRECTORY_UHD_SHOWS', destination_directory_shows)
+destination_directory_uhd_movies = os.environ.get('DESTINATION_DIRECTORY_UHD_MOVIES', destination_directory_movies)
 uhd_library = os.environ.get('UHD_LIBRARY', 'True').lower() == 'true'
 
 source_directories = {
     source_directory_shows: destination_directory_shows,
     source_directory_movies: destination_directory_movies
 }
+
 
 def create_symlinks_for_files_in_folder(source_folder, destination_folder):
     if not os.path.exists(destination_folder):
@@ -78,8 +81,13 @@ def create_symlink_with_retries(source, destination, max_retries=1, retry_interv
 def scan_directories(seen_items):
     while True:
         for source_base, dest_base in source_directories.items():
-            # Skip UHD directory linking if UHD_LIBRARY is False
-            if not uhd_library and '-uhd' in dest_base:
+            # Determine if current item is UHD and adjust destination directory accordingly
+            dest_base_uhd = dest_base
+            if uhd_library and '-uhd' in dest_base:
+                if 'shows' in source_base:
+                    dest_base_uhd = destination_directory_uhd_shows
+                elif 'movies' in source_base:
+                    dest_base_uhd = destination_directory_uhd_movies
                 continue
 
             current_items = set(os.listdir(source_base))
