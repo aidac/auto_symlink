@@ -22,7 +22,7 @@ version: '3.9'
 services:
   auto-symlink:
     container_name: auto-symlink
-    image: auto-symlink
+    image: aidotas/auto_symlink
     environment:
       - PUID=1000 # specify your PUID to avoid permission issues
       - PGID=1000 # specify your PGID to avoid permission issues
