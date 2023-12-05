@@ -3,6 +3,8 @@ Docker script, which monitors specified source directories for new Movie/Show ad
 #### Use case
 light-weight Real-debrid integration with *arr stack. 
 
+<img width="1072" alt="Screenshot 2023-12-05 at 14 41 45" src="https://github.com/aidac/auto_symlink/assets/16380656/4d734e55-448d-43d9-800e-8a2e1111ec8b">
+
 Pros:
 * Quick symlink creation
 * Manually choose your preferred media types and sizes
@@ -18,7 +20,7 @@ Specify source as RD rclone mount (or zurg) and destination as Sonarr/Radarr lib
 Script will monitor specified dirs in 10s intervals and match the names to **existing** folders in destination dirs. Make sure to add content in *arr first, so it would create appropriate dirs (or do it manually).
 
 **docker-compose.yml**
-```  
+```
 version: '3.9'
 services:
   auto-symlink:
@@ -39,3 +41,4 @@ services:
       - realdebrid:/torrents # be sure to mount your rclone RD volume
       - /data:/data
     tty: true
+```
